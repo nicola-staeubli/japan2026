@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Japan 2026</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      min-height: 100vh;
+      background: #fff;
+      color: #111;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: 240px;
+      min-width: 240px;
+      padding: 40px 28px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      border-right: 1px solid #e8e8e8;
+    }
+
+    #sidebar h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 32px;
+    }
+
+    .nav-section {
+      margin-bottom: 24px;
+    }
+
+    .nav-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #999;
+      margin-bottom: 10px;
+    }
+
+    .nav-links {
+      list-style: none;
+    }
+
+    .nav-links li {
+      margin-bottom: 6px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #555;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: #111;
+    }
+
+    /* ── Main grid ── */
+    #main {
+      flex: 1;
+      padding: 40px 32px;
+      overflow-y: auto;
+    }
+
+    /* Masonry-style columns */
+    .photo-grid {
+      columns: 3 260px;
+      column-gap: 8px;
+    }
+
+    .photo-grid .photo-item {
+      break-inside: avoid;
+      margin-bottom: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      background: #f0f0f0;
+    }
+
+    .photo-grid .photo-item img {
+      width: 100%;
+      display: block;
+      transition: opacity 0.2s;
+    }
+
+    .photo-grid .photo-item img:hover {
+      opacity: 0.88;
+    }
+
+    /* ── Lightbox ── */
+    #lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #lightbox.open {
+      display: flex;
+    }
+
+    #lightbox img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+    }
+
+    #lightbox-close {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+
+    #lightbox-close:hover {
+      opacity: 1;
+    }
+
+    #lightbox-prev,
+    #lightbox-next {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #fff;
+      font-size: 2rem;
+      cursor: pointer;
+      opacity: 0.6;
+      padding: 16px;
+      transition: opacity 0.15s;
+      user-select: none;
+    }
+
+    #lightbox-prev { left: 12px; }
+    #lightbox-next { right: 12px; }
+
+    #lightbox-prev:hover,
+    #lightbox-next:hover {
+      opacity: 1;
+    }
+
+    #lightbox-caption {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: rgba(255,255,255,0.6);
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+      white-space: nowrap;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 680px) {
+      #sidebar {
+        display: none;
+      }
+      .photo-grid {
+        columns: 2 140px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav id="sidebar">
+  <h1><a href="index.html" style="text-decoration:none;color:inherit;">Japan 2026</a></h1>
+
+  <ul class="nav-links" id="album-nav">
+    <!-- populated by JS -->
+  </ul>
+</nav>
+
+<!-- Main content -->
+<main id="main">
+<div class="photo-grid" id="photo-grid"></div>
+
+  <!-- About panel (hidden by default) -->
+  <div id="about-panel" style="display:none; max-width:520px; line-height:1.75; font-size:0.95rem; color:#444;">
+    <h2 style="font-size:1.1rem; font-weight:600; margin-bottom:16px; color:#111;">About this trip</h2>
+    <p>
+      Two weeks exploring Japan — from the neon-lit streets of Tokyo to the ancient temples
+      of Kyoto, the deer park in Nara, and the floating torii gate of Miyajima.
+      All photos taken with a Sony A7C II.
+    </p>
+    <p style="margin-top:14px; color:#999; font-size:0.82rem;">March 2024</p>
+  </div>
+</main>
+
+<!-- Lightbox -->
+<div id="lightbox">
+  <span id="lightbox-close">&times;</span>
+  <span id="lightbox-prev">&#8249;</span>
+  <img id="lightbox-img" src="" alt="" />
+  <span id="lightbox-next">&#8250;</span>
+  <div id="lightbox-caption"></div>
+</div>
+
+<script>
+  // ─────────────────────────────────────────────
+  // DATA — replace these entries with your own photos.
+  // Each photo needs:
+  //   src   : path to the image file  (e.g. "photos/tokyo-01.jpg")
+  //   alt   : short description
+  //   album : must match one of the album keys below
+  // ─────────────────────────────────────────────
+  const albums = [
+    { key: "art-calligraphy",      label: "Art & Calligraphy" },
+    { key: "details-textures",     label: "Details & Textures" },
+    { key: "hobbies-curiosities",  label: "Hobbies & Curiosities" },
+    { key: "landscapes-nature",    label: "Landscapes & Nature" },
+    { key: "temples-shrines",      label: "Temples & Shrines" },
+    { key: "transportation",       label: "Transportation" },
+    { key: "urban-street-scenes",  label: "Urban Street Scenes" },
+  ];
+
+  // ── Photos ──
+  const photos = [
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4490.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4491.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4492.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4493.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4495.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4496.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4497.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4498.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4499.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4500.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4501.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4502.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4503.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4504.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4505.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4506.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4507.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4508.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4509.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4510.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4511.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4512.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4513.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4514.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4515.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Art%20%26%20Calligraphy/DSCF4597.JPG", alt: "", album: "art-calligraphy" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3857.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3865.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3910.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3914.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3941.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3942.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3943.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3947.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3948.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3949.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3950.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3982.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3983.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF3986.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4026.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4027.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4074.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4082.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4085.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4087.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4088.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4093.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4094.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4099.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4100.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4102.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4103.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4106.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4107.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4141.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4142.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4143.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4146.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4147.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4148.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4149.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4150.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4156.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4170.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4177.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4185.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4189.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4193.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4194.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4195.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4196.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4200.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4202.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4203.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4205.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4206.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4207.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4247.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4248.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4257.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4261.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4266.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4267.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4268.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4273.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4274.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4275.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4284.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4285.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4286.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4287.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4291.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4292.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4296.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4297.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4298.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4308.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4321.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4322.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4323.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4327.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4328.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4336.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4337.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4338.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4339.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4340.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4345.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4346.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4347.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4348.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4350.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4351.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4352.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4353.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4354.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4355.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4356.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4357.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4362.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4367.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4373.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4376.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4377.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4378.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4379.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4380.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4381.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4420.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4451.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4456.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4458.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4478.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4488.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4489.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4494.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4518.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4519.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4520.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4534.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4535.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4536.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4537.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4541.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4554.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4561.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4567.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4568.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4573.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4584.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4586.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4588.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4589.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4600.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4603.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4604.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4616.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4617.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4618.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4619.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4620.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4621.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4622.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4636.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4673.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4676.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4677.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4678.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4679.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Details%20%26%20Textures/DSCF4680.JPG", alt: "", album: "details-textures" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3884.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3892.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3894.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3895.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3896.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3905.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3906.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3907.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3908.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3915.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3924.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3925.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3926.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3957.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3964.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3987.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3992.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3996.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF3999.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4004.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4098.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4108.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4137.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4182.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4183.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4217.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4220.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4224.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4230.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4232.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4251.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4252.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4253.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4254.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4255.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4256.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4270.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4271.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4276.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4278.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4279.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4280.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4282.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4283.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4288.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4289.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4290.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4293.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4294.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4295.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4299.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4300.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4301.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4302.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4311.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4312.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4313.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4316.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4317.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4319.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4320.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4324.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4325.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4326.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4329.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4334.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4335.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4341.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4342.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4343.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4344.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4349.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4368.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4369.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4370.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4371.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4372.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4408.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4409.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4413.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4414.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4459.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4460.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4462.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4465.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4466.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4469.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4470.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4527.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4539.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4540.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4553.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4565.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4605.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4655.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4656.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Hobbies%20%26%20Curiosities/DSCF4675.JPG", alt: "", album: "hobbies-curiosities" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3847.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3848.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3849.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3855.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3856.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3890.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3900.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3902.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3961.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF3962.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4031.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4091.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4092.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4097.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4109.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4139.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4140.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4161.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4164.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4166.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4178.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4179.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4198.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4199.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4226.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4227.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4228.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4231.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4249.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4262.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4272.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4277.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4415.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4416.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4417.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4418.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4419.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4426.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4427.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4428.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4429.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4430.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4444.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4445.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4446.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4447.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4448.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4449.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4450.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4455.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4457.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4468.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4598.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4606.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4607.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4608.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4609.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4610.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4612.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4613.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4614.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4615.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4623.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4624.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4625.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4626.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4627.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4659.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4660.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4661.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4663.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4666.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4670.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4685.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4687.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4688.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4689.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4690.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Landscapes%20%26%20Nature/DSCF4691.JPG", alt: "", album: "landscapes-nature" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3871.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3872.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3873.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3898.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3899.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3903.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3904.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3911.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3912.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3913.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3980.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3981.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3984.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF3985.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4028.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4033.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4034.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4035.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4037.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4038.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4039.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4051.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4075.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4076.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4077.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4079.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4080.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4081.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4083.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4084.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4086.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4089.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4090.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4096.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4104.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4105.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4138.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4144.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4145.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4151.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4152.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4154.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4155.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4157.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4158.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4159.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4180.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Temples%20%26%20Shrines/DSCF4181.JPG", alt: "", album: "temples-shrines" },
+    { src: "Photos/Transportation/DSCF3868.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF3869.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF3870.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4029.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4030.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4095.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4163.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4216.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4306.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4309.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4310.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4374.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4375.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4382.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4433.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4434.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4480.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4485.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4487.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4521.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4522.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4523.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4528.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4552.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4571.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4583.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4590.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4591.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4594.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4602.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4633.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4634.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4642.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4644.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4654.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4668.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4669.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4674.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4681.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4695.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4696.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4697.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4698.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Transportation/DSCF4699.JPG", alt: "", album: "transportation" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3859.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3861.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3862.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3863.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3867.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3876.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3881.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3882.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3885.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3887.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3889.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3917.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3918.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3919.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3920.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3921.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3922.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3923.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3927.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3929.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3930.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3932.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3938.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3940.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3944.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3945.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3946.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3951.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3952.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3953.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3954.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3955.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3956.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3958.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3959.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3960.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3963.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3965.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3966.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3967.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3968.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3969.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3970.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3971.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3975.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3977.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3978.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF3979.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4110.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4111.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4112.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4113.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4114.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4115.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4116.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4117.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4118.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4120.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4121.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4122.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4123.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4124.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4125.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4126.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4127.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4128.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4129.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4130.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4131.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4132.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4134.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4136.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4153.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4160.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4162.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4171.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4172.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4173.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4174.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4175.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4176.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4184.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4186.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4187.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4188.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4190.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4192.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4197.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4201.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4204.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4209.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4213.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4215.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4243.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4244.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4245.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4246.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4258.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4259.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4260.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4263.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4264.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4265.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4269.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4314.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4315.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4332.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4333.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4358.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4359.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4360.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4361.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4363.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4364.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4365.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4366.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4383.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4406.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4407.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4410.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4411.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4412.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4421.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4422.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4423.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4424.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4425.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4431.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4432.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4435.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4436.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4437.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4438.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4439.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4440.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4441.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4442.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4454.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4461.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4463.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4464.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4467.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4471.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4472.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4473.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4474.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4475.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4476.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4477.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4481.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4482.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4483.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4486.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4516.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4517.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4524.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4525.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4526.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4529.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4530.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4531.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4532.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4533.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4538.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4542.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4544.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4547.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4555.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4556.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4557.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4558.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4559.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4560.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4562.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4563.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4566.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4569.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4570.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4572.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4574.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4575.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4576.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4577.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4579.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4580.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4585.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4587.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4595.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4596.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4599.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4601.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4628.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4629.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4630.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4631.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4632.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4637.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4638.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4639.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4640.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4641.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4643.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4645.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4646.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4647.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4648.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4649.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4650.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4651.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4652.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4653.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4657.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4658.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4664.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4665.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4671.JPG", alt: "", album: "urban-street-scenes" },
+    { src: "Photos/Urban%20Street%20Scenes/DSCF4672.JPG", alt: "", album: "urban-street-scenes" },
+  ];
+
+  // ─────────────────────────────────────────────
+  // Build sidebar album links
+  // ─────────────────────────────────────────────
+  const albumNav = document.getElementById("album-nav");
+  albums.forEach(({ key, label }) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<a href="#" data-album="${key}">${label}</a>`;
+    albumNav.appendChild(li);
+  });
+
+  // ─────────────────────────────────────────────
+  // Render grid
+  // ─────────────────────────────────────────────
+  let currentAlbum = "all";
+  let currentPhotos = [];
+  let lightboxIndex = 0;
+
+  function renderGrid(albumKey) {
+    currentAlbum = albumKey;
+    currentPhotos = albumKey === "all" ? photos : photos.filter(p => p.album === albumKey);
+
+    const grid = document.getElementById("photo-grid");
+    grid.innerHTML = "";
+
+    currentPhotos.forEach((photo, i) => {
+      const item = document.createElement("div");
+      item.className = "photo-item";
+      const img = document.createElement("img");
+      img.src = photo.src;
+      img.alt = photo.alt;
+      img.loading = "lazy";
+      img.addEventListener("click", () => openLightbox(i));
+      item.appendChild(img);
+      grid.appendChild(item);
+    });
+  }
+
+  // ─────────────────────────────────────────────
+  // Navigation
+  // ─────────────────────────────────────────────
+  function setActiveLink(key) {
+    document.querySelectorAll("[data-album]").forEach(l => {
+      l.classList.toggle("active", l.dataset.album === key);
+    });
+  }
+
+  document.getElementById("album-nav").addEventListener("click", e => {
+    const link = e.target.closest("[data-album]");
+    if (!link) return;
+    e.preventDefault();
+    const key = link.dataset.album;
+    setActiveLink(key);
+    renderGrid(key);
+  });
+
+  // ─────────────────────────────────────────────
+  // Lightbox
+  // ─────────────────────────────────────────────
+  const lightbox    = document.getElementById("lightbox");
+  const lbImg       = document.getElementById("lightbox-img");
+  const lbCaption   = document.getElementById("lightbox-caption");
+
+  function openLightbox(index) {
+    lightboxIndex = index;
+    showLightboxPhoto();
+    lightbox.classList.add("open");
+  }
+
+  function showLightboxPhoto() {
+    const p = currentPhotos[lightboxIndex];
+    lbImg.src = p.src;
+    lbImg.alt = p.alt;
+    lbCaption.textContent = `${p.alt}  ·  ${lightboxIndex + 1} / ${currentPhotos.length}`;
+  }
+
+  document.getElementById("lightbox-close").addEventListener("click", () => {
+    lightbox.classList.remove("open");
+  });
+
+  document.getElementById("lightbox-prev").addEventListener("click", () => {
+    lightboxIndex = (lightboxIndex - 1 + currentPhotos.length) % currentPhotos.length;
+    showLightboxPhoto();
+  });
+
+  document.getElementById("lightbox-next").addEventListener("click", () => {
+    lightboxIndex = (lightboxIndex + 1) % currentPhotos.length;
+    showLightboxPhoto();
+  });
+
+  lightbox.addEventListener("click", e => {
+    if (e.target === lightbox) lightbox.classList.remove("open");
+  });
+
+  document.addEventListener("keydown", e => {
+    if (!lightbox.classList.contains("open")) return;
+    if (e.key === "ArrowLeft")  { lightboxIndex = (lightboxIndex - 1 + currentPhotos.length) % currentPhotos.length; showLightboxPhoto(); }
+    if (e.key === "ArrowRight") { lightboxIndex = (lightboxIndex + 1) % currentPhotos.length; showLightboxPhoto(); }
+    if (e.key === "Escape")     { lightbox.classList.remove("open"); }
+  });
+
+  // ─────────────────────────────────────────────
+  // Init
+  // ─────────────────────────────────────────────
+  setActiveLink("art-calligraphy");
+  renderGrid("art-calligraphy");
+</script>
+</body>
+</html>
